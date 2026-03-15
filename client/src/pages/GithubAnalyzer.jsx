@@ -1,10 +1,8 @@
 import React from 'react'
-import Navbar from '../components/Navbar'
 
 const GithubAnalyzer = () => {
   return (
-    <div>
-      <Navbar/>
+    <div  className='text-black'>
       GithubAnalyzer
     </div>
   )

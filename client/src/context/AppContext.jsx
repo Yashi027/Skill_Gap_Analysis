@@ -35,6 +35,51 @@ export const AppProvider = ({children}) => {
         parseInt(localStorage.getItem('streak')) || 0
     )
 
+    const completeSkill = (skillName) => {
+    if (!completedSkills.includes(skillName)) {
+      const updatedSkills = [...completedSkills, skillName];
+      setCompletedSkills(updatedSkills);
+      const today = new Date().toDateString();
+
+      if (lastCompletedDate === today) {
+        setStreak(prev => prev + 1);
+      } else {
+        setStreak(1);
+      }
+
+      setLastCompletedDate(today);
+    }
+  };
+
+    const generateRoadmap = () => {
+    if (!selectedCareer) return;
+
+    const careerSkills = {
+        frontend: ["HTML", "CSS", "JavaScript", "React", "Redux"],
+        backend: ["Node.js", "Express", "MongoDB", "SQL", "API Design"],
+        fullstack: ["HTML", "CSS", "JavaScript", "React", "Node.js", "MongoDB"]
+    };
+
+    const skills = careerSkills[selectedCareer] || [];
+
+    const generated = skills.map(skill => {
+        const rating = skillRatings[skill] || 0;
+
+        let priority = "Low";
+
+        if (rating <= 2) priority = "High";
+        else if (rating === 3) priority = "Medium";
+
+        return {
+            name: skill,
+            difficulty: rating <= 2 ? "Beginner" : rating === 3 ? "Intermediate" : "Advanced",
+            priority
+        };
+    });
+
+    setRoadmap(generated);
+    };
+
     useEffect(() => {
         if(roadmap.length>0){
             const calculatedProgress = (completedSkills.length/roadmap.length)*100;
@@ -91,7 +136,9 @@ export const AppProvider = ({children}) => {
             streak,
             setStreak,
             lastCompletedDate,
-            setLastCompletedDate
+            setLastCompletedDate,
+            completeSkill,
+            generateRoadmap
         }
         }>
             {children}
