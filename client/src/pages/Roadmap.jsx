@@ -42,6 +42,61 @@ const Roadmap = () => {
            <p className='text-sm text-gray-500 mt-2'>{completedSkills.length}/{roadmap.length} skills completed</p>
         </div>
 
+        <div className='flex gap-3 mb-8'>
+          {
+            ['all','completed','pending'].map((type) => (
+              <button key={type} onClick={() => setFilter(type)}
+              className={`px-4 py-2 rounded-md text-sm font-medium capitalize transition 
+              ${filter === type ? 'bg-indigo-500 text-white' : 'bg-white border border-gray-200 hover:bg-gray-100'}`}>
+                {type}
+              </button>
+            ))
+          }
+        </div>
+
+        <div className='space-y-4'>
+          {
+            filteredSkills.length === 0 ? 
+            (<p className='text-gray-500'>No skills found.</p>):
+            (
+              filteredSkills.map((skill,index) => {
+                const isCompleted = completedSkills.includes(skill.name);
+
+                return(
+                  <div
+                   key={index}
+                   className={`flex justify-between items-centerp-5 rounded-xl border transition ${
+                    isCompleted ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200 hover:shadow-md'
+                   }`}>
+                    <div className='flex items-start gap-4'>
+                      <div className={`w-4 h-4 mt-2 rounded-full ${isCompleted ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                      <div>
+                        <h3 className='text-lg font-semibold text-gray-800'>{skill.name}</h3>
+                        <div className='flex gap-2 mt-2'>
+                          <span>{skill.difficulty}</span>
+                          <span>{skill.priority}</span>
+                        </div>
+                      </div>
+                    </div>
+                    {
+                      isCompleted ? (
+                        <span className='text-green-600 font-semibold text-sm'>Completed</span>
+                      ) : (
+                        <button
+                         onClick={() => completeSkill(skill.name)}
+                         className='bg-indigo-500 text-white px-4 py-2 rounded-md hover:bg-indigo-600 transition text-sm font-medium'>
+                          Mark Complete
+                        </button>
+                      )
+                    }
+                  </div>
+                )
+              })
+            )
+          }
+        </div>
+
+
       </div>     
     </div>
   )
