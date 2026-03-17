@@ -35,20 +35,59 @@ export const AppProvider = ({children}) => {
         parseInt(localStorage.getItem('streak')) || 0
     )
 
-    const completeSkill = (skillName) => {
-    if (!completedSkills.includes(skillName)) {
-      const updatedSkills = [...completedSkills, skillName];
-      setCompletedSkills(updatedSkills);
-      const today = new Date().toDateString();
+    const fetchGithubData = async (username) => {
+        try {
+            const res = await fetch(`https://api.github.com/users/${username}`)
+            const repos = await fetch(`https://api.github.com/users/${username}/repos`)
+            const userData = await res.json();
+            const repoData = await repos.json();
+            const score = (userData.public_repos * 2) + (userData.followers * 5);
 
-      if (lastCompletedDate === today) {
-        setStreak(prev => prev + 1);
-      } else {
-        setStreak(1);
-      }
-
-      setLastCompletedDate(today);
+            const summary={
+                name: userData.name,
+                avatar: userData.avatar_url,
+                repoCount: userData.public_repos,
+                followers: userData.followers,
+                score: Math.min(score,100)
+            }
+            setGithubData(summary)
+            localStorage.setItem("githubData",JSON.stringify(summary));
+        } catch (error) {
+            console.log(`Error : ${error}`)
+        }
     }
+
+    const completeSkill = (skillName) => {
+    const alreadyDone = completedSkills.find((s) => s.name === skillName);
+    if(alreadyDone)
+        return;
+    const today = new Date();
+    const todayString = today.toDateString();
+
+    const newEntry = {
+        name: skillName,
+        completedAt: today.toISOString()
+    };
+
+    const updatedSkills = [...completedSkills,newEntry]
+    setCompletedSkills(updatedSkills);
+
+    if(!lastCompletedDate){
+        setStreak(1);
+    }else{
+        const lastDate = new Date(lastCompletedDate);
+        const diffTime = today-lastDate;
+        const diffDays = Math.floor(diffTime/(1000*60*60*24));
+
+        if(today==lastCompletedDate){
+            console.log("Streak Maintained")
+        }else if(diffDays==1){
+            setStreak(prev => prev+1);
+        }else{
+            setStreak(1);
+        }
+    }
+    setLastCompletedDate(todayString);
   };
 
     const generateRoadmap = () => {
@@ -108,7 +147,16 @@ export const AppProvider = ({children}) => {
     },[completedSkills])
 
     useEffect(() => {
-        localStorage.setItem("lastCompletedDate",lastCompletedDate)
+        if(lastCompletedDate){
+            const today = new Date();
+            const lastDate = new Date(lastCompletedDate);
+            const diff = today-lastDate;
+            const diffDays = Math.floor(diff/(1000*60*60*24))
+
+            if(diffDays>1)
+                setStreak(0);
+        }
+       // localStorage.setItem("lastCompletedDate",lastCompletedDate)
     },[lastCompletedDate])
 
     useEffect(() => {

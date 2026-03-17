@@ -65,7 +65,7 @@ const Roadmap = () => {
                 return(
                   <div
                    key={index}
-                   className={`flex justify-between items-centerp-5 rounded-xl border transition ${
+                   className={`flex justify-between items-center p-5 rounded-xl border transition ${
                     isCompleted ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200 hover:shadow-md'
                    }`}>
                     <div className='flex items-start gap-4'>

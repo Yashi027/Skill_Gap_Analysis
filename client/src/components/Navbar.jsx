@@ -2,8 +2,11 @@ import React from 'react'
 import searchIcon from '../assets/search_icon.svg'
 import profileIcon from '../assets/profile_icon.png'
 import arrow from '../assets/arrow.svg'
+import {useNavigate} from 'react-router-dom'
 
 const Navbar = ({open,setOpen}) => {
+  const navigate = useNavigate();
+
   return (
     <div className='bg-blue-300 m-3 px-4 py-5 flex items-center justify-between rounded'>
 
@@ -15,7 +18,7 @@ const Navbar = ({open,setOpen}) => {
             <img src={arrow} alt="" />
           </button> : <></>
         }
-        <div className="text-4xl font-bold text-white">
+        <div className="text-4xl font-bold text-white cursor-pointer" onClick={() => navigate('/')}>
           Skill<span className="text-indigo-600">Gap</span>
         </div>
       </div>
