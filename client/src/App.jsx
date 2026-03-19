@@ -7,6 +7,7 @@ import Progress from './pages/Progress'
 import Roadmap from './pages/Roadmap'
 import SkillAnalysis from './pages/SkillAnalysis'
 import Upper from './components/Upper'
+import Footer from './components/Footer'
 
 function App() {
 
@@ -21,6 +22,7 @@ function App() {
           <Route path='/github' element={<GithubAnalyzer/>}/>
         </Route>
       </Routes>
+      <Footer/>
     </BrowserRouter>
   )
 }
