@@ -43,12 +43,53 @@ export const AppProvider = ({children}) => {
             const repos = await fetch(`https://api.github.com/users/${username}/repos`)
             const userData = await res.json();
             const repoData = await repos.json();
-            if(!res.ok){
+            if(!res.ok || !repos.ok){
                 setGithubData(null);
                 localStorage.removeItem('githubData');
                 throw new Error('User Not Found')
             }
             const score = (userData.public_repos * 2) + (userData.followers * 5);
+            const language_counts={};
+            repos.forEach(repo => {
+                if(repo.language){
+                    language_counts[repo.language] = (language_counts[repo.language] || 0)+1;
+                }
+            });
+
+            const syncMap = {
+                "JavaScript":"JavaScript",
+                "TypeScript":"JavaScript",
+                "HTML":"HTML",
+                "CSS":"CSS",
+                "Python":"Python",
+                "Java":"Java"
+            }
+            const newRatings = {...skillRatings};
+            let syncCount=0;
+
+            Object.keys(language_counts).forEach(lang => {
+                const skillname = syncMap[lang];
+                if(skillname){
+                    const repoCount = language_counts[lang];
+                    let autoRating = 1;
+                    if(repoCount>5)
+                        autoRating=5;
+                    else if(repoCount>=3)
+                        autoRating=4;
+                    else if(repoCount==2)
+                        autoRating=3;
+                    else if(repoCount==1)
+                        autoRating=2;
+
+                    if(!newRatings[skillname] || autoRating>newRatings[skillname])
+                    {
+                        newRatings[skillname] = autoRating;
+                        syncCount++;
+                    }
+                } 
+            });
+
+            setSkillRatings(newRatings)
 
             const summary={
                 name: userData.name,
@@ -57,10 +98,11 @@ export const AppProvider = ({children}) => {
                 followers: userData.followers,
                 score: Math.min(score,100),
                 profile_url: userData.html_url,
-                location: userData.location
+                location: userData.location,
+                languages: language_counts
             }
             setGithubData(summary)
-            localStorage.setItem("githubData",JSON.stringify(summary));
+            //localStorage.setItem("githubData",JSON.stringify(summary));
         } catch (error) {
             console.log(`Error : ${error}`)
         }
@@ -126,20 +168,24 @@ export const AppProvider = ({children}) => {
     });
 
     setRoadmap(generated);
+    localStorage.setItem('roadmap', JSON.stringify(generated));
     };
 
     useEffect(() => {
         if(roadmap.length>0){
-            const calculatedProgress = (completedSkills.length/roadmap.length)*100;
+            const relevant = completedSkills.filter(completedskill => roadmap.some(r => r.name===(completedskill.name||completedskill)))
+            const calculatedProgress = (relevant.length/roadmap.length)*100;
             setProgress(Math.round(calculatedProgress))
         }
     },[completedSkills,roadmap])
 
     useEffect(() => {
+        generateRoadmap()
         localStorage.setItem("selectedCareer",selectedCareer)
     },[selectedCareer])
 
     useEffect(() => {
+        generateRoadmap()
         localStorage.setItem("skillRatings",JSON.stringify(skillRatings))
     },[skillRatings])
 

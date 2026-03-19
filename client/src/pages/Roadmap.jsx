@@ -5,7 +5,7 @@ const Roadmap = () => {
 
   const {roadmap,progress,streak,completedSkills,selectedCareer, completeSkill} = useContext(AppContext);
   const [filter,setFilter] = useState("all")
-
+  const relevant = completedSkills.filter(completedskill => roadmap.some(r => r.name===(completedskill.name||completedskill)))
   const filteredSkills = roadmap.filter((skill) => {
     const isDone = completedSkills.some(s => s.name === skill.name);
     if(filter==="completed"){
@@ -40,7 +40,7 @@ const Roadmap = () => {
             style={{width:`${progress}%`}}></div>
            </div>
 
-           <p className='text-sm text-gray-500 mt-2'>{completedSkills.length}/{roadmap.length} skills completed</p>
+           <p className='text-sm text-gray-500 mt-2'>{relevant.length}/{roadmap.length} skills completed</p>
         </div>
 
         <div className='flex gap-3 mb-8'>
