@@ -50,7 +50,7 @@ export const AppProvider = ({children}) => {
             }
             const score = (userData.public_repos * 2) + (userData.followers * 5);
             const language_counts={};
-            repos.forEach(repo => {
+            repoData.forEach(repo => {
                 if(repo.language){
                     language_counts[repo.language] = (language_counts[repo.language] || 0)+1;
                 }
@@ -102,9 +102,10 @@ export const AppProvider = ({children}) => {
                 languages: language_counts
             }
             setGithubData(summary)
-            //localStorage.setItem("githubData",JSON.stringify(summary));
+            localStorage.setItem("githubData",JSON.stringify(summary));
         } catch (error) {
-            console.log(`Error : ${error}`)
+            console.log(`Error : ${error}`);
+            throw error;
         }
     }
 
@@ -211,7 +212,7 @@ export const AppProvider = ({children}) => {
             if(diffDays>1)
                 setStreak(0);
         }
-       // localStorage.setItem("lastCompletedDate",lastCompletedDate)
+       localStorage.setItem("lastCompletedDate",lastCompletedDate)
     },[lastCompletedDate])
 
     useEffect(() => {
