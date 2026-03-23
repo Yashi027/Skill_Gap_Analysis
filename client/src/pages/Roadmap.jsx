@@ -25,16 +25,30 @@ const Roadmap = () => {
     <div className='min-h-screen px-6 py-8 bg-gray-50'>
       <div className='max-w-5xl mx-auto'>
 
-        <div className='bg-indigo-500 text-white p-6 rounded-xl shadow mb-8'>
-          <h1 className='text-2xl font-semibold capitalize'>
-            {selectedCareer ? `${selectedCareer} Roadmap` : 'Learning Roadmap'}
-          </h1>
-          <p className='text-sm opacity-90 mt-1'>
-            Follow this roadmap to become a Skilled {selectedCareer ? selectedCareer : 'Developer'}
-          </p>
-          <p className='mt-3 text-sm'>
-            🔥 Learning Streak: <span className='font-semibold'>{streak}</span> days
-          </p>
+        <div className='bg-indigo-500 text-white p-6 rounded-xl shadow mb-4'>
+          <div className='flex justify-between items-start'>
+            <div>
+              <h1 className='text-2xl font-semibold capitalize'>
+                {selectedCareer ? `${selectedCareer} Roadmap` : 'Learning Roadmap'}
+              </h1>
+              <p className='text-sm opacity-90 mt-1'>
+                Follow this roadmap to become a Skilled {selectedCareer ? selectedCareer : 'Developer'}
+              </p>
+              <p className='mt-3 text-sm'>
+                🔥 Learning Streak: <span className='font-semibold'>{streak}</span> days
+              </p>
+            </div>
+
+            <button
+              onClick={() => {
+                localStorage.removeItem("completedSkills");
+                window.location.reload();
+              }}
+              className='px-4 py-2 text-sm bg-red-500 text-white rounded-md hover:bg-red-600 transition'
+            >
+              Reset Progress
+            </button>
+          </div>
         </div>
 
         <div className='bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8'>
@@ -104,14 +118,15 @@ const Roadmap = () => {
                   </div>
 
                   <button
-                    onClick={() => toggleSkill(skill.name)}
+                    onClick={() => !isCompleted && toggleSkill(skill.name)}
+                    disabled={isCompleted}
                     className={`px-4 py-2 rounded-md text-sm font-medium transition ${
                       isCompleted
-                        ? 'bg-red-500 text-white hover:bg-red-600'
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         : 'bg-indigo-500 text-white hover:bg-indigo-600'
                     }`}
                   >
-                    {isCompleted ? "Mark Pending" : "Mark Complete"}
+                    {isCompleted ? "Completed" : "Mark Complete"}
                   </button>
                 </div>
               );
