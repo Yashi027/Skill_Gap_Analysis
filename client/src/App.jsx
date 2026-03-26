@@ -8,6 +8,7 @@ import Roadmap from './pages/Roadmap'
 import SkillAnalysis from './pages/SkillAnalysis'
 import Upper from './components/Upper'
 import Footer from './components/Footer'
+import Quiz from './pages/Quiz'
 
 function App() {
 
@@ -20,6 +21,7 @@ function App() {
           <Route path='/progress' element={<Progress/>}/>
           <Route path='/roadmap' element={<Roadmap/>}/>
           <Route path='/github' element={<GithubAnalyzer/>}/>
+          <Route path='/quiz' element={<Quiz/>}/>
         </Route>
       </Routes>
       <Footer/>

@@ -109,7 +109,7 @@ const Dashboard = () => {
                     'CSS': 'https://web.dev/learn/css',
                     'JavaScript': 'https://javascript.info/',
                     'React': 'https://react.dev/learn',
-                    'Node.js': 'https://nodejs.org/en/learn/getting-started/introduction-to-nodejs',
+                    'NodeJs': 'https://nodejs.org/en/learn/getting-started/introduction-to-nodejs',
                     'MongoDb': 'https://www.geeksforgeeks.org/mongodb/mongodb-tutorial/',
                     'Redux': 'https://www.tutorialspoint.com/redux/redux_overview.htm',
                     'Express': 'https://expressjs.app/learn',

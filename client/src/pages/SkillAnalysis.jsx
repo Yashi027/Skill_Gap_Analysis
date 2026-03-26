@@ -8,15 +8,25 @@ const SkillAnalysis = () => {
 
   const careerSkillMap = {
     frontend: ["HTML", "CSS", "JavaScript", "React", "Redux"],
-    backend: ["Node.js", "Express", "MongoDb", "SQL", "API Design"],
-    fullstack: ["HTML", "CSS", "JavaScript", "React", "Node.js", "MongoDb"]
+    backend: ["NodeJs", "Express", "MongoDb", "SQL", "API Design"],
+    fullstack: ["HTML", "CSS", "JavaScript", "React", "NodeJs", "MongoDb"]
   };
 
   const handleRatingChange = (skill, rating) => {
-    setSkillRatings(prev => ({
-      ...prev,
-      [skill]: parseInt(rating)
-    }));
+    const currentRating = skillRatings[skill] || 0;
+    if(rating <= currentRating){
+      setSkillRatings(prev => ({
+        ...prev,
+        [skill]: rating
+      }));
+      return;
+    }
+    navigate('/quiz',{
+      state: {
+        skill,
+        rating
+      }
+    });
   };
 
   const handleGenerate = () => {
