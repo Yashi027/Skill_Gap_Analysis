@@ -79,8 +79,7 @@ const SkillAnalysis = () => {
                       {
                         [1,2,3,4,5].map((num) => (
                           <button key={num} 
-                          // onClick={() => handleRatingChange(skill,num)}
-                          disabled
+                           onClick={() => handleRatingChange(skill,num)}
                           className={`h-10 w-10 rounded-full transition-all ${skillRatings[skill]===num ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'}`}>
                             {num}
                           </button>

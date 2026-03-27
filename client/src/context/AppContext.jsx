@@ -172,7 +172,7 @@ export const AppProvider = ({ children }) => {
             return {
                 name: skill,
                 difficulty: rating <= 2 ? "Beginner" :
-                            rating === 3 ? "Intermediate" : "Advanced",
+                    rating === 3 ? "Intermediate" : "Advanced",
                 priority
             };
         });
