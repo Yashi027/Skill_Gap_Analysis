@@ -23,13 +23,18 @@ const Navbar = ({open,setOpen}) => {
         </div>
       </div>
 
-      <div className='hidden md:flex items-center w-1/3'>
-        <div className='flex items-center w-full bg-white rounded-lg px-3 py-2 shadow-sm'>
-          <img src={searchIcon} alt="Search Icon" className='p-2 ' />
-          <input type="text" placeholder='Search here..' className=' outline-none w-full' />
-        </div>
+      
+      <div className="flex items-center gap-9 mt-2">
+      <button 
+        onClick={() => navigate('/')}
+        className="px-5 py-2 rounded-full bg-white text-blue-600 font-semibold shadow-md hover:bg-blue-100 hover:scale-105 transition-all duration-200"
+      >
+        Home
+      </button>
+
+      <img src={profileIcon} alt="Profile" className='h-12 w-12' />
       </div>
-      <img src={profileIcon} alt="Profile" className='h-12 w-12 ' />
+      {/* <img src={profileIcon} alt="Profile" className='h-12 w-12 ' /> */}
 
     </div>
   )
