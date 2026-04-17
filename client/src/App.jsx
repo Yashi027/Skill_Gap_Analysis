@@ -1,28 +1,26 @@
 import { useState } from 'react'
-import './App.css'
 import {BrowserRouter,Routes,Route} from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
 import GithubAnalyzer from './pages/GithubAnalyzer'
 import Progress from './pages/Progress'
 import Roadmap from './pages/Roadmap'
 import SkillAnalysis from './pages/SkillAnalysis'
-import Upper from './components/Upper'
 import Footer from './components/Footer'
 import Quiz from './pages/Quiz'
+import Navbar from './components/Navbar'
 
 function App() {
 
   return (
     <BrowserRouter>
+      <Navbar/>
       <Routes>
-        <Route element={<Upper/>}>
           <Route path='/' element={<Dashboard/>}/>
           <Route path='/analysis' element={<SkillAnalysis/>}/>
           <Route path='/progress' element={<Progress/>}/>
           <Route path='/roadmap' element={<Roadmap/>}/>
           <Route path='/github' element={<GithubAnalyzer/>}/>
           <Route path='/quiz' element={<Quiz/>}/>
-        </Route>
       </Routes>
       <Footer/>
     </BrowserRouter>
