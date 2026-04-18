@@ -32,9 +32,16 @@ export const AppProvider = ({ children }) => {
         JSON.parse(localStorage.getItem('weeklyProgress')) || []
     );
 
-    const [streak, setStreak] = useState(
-        parseInt(localStorage.getItem('streak')) || 0
-    );
+    const [streak, setStreak] = useState(0);
+
+    useEffect(() => {
+        if (currentGithubUser) {
+            const saved =
+                parseInt(localStorage.getItem(`streak_${currentGithubUser}`)) || 0;
+
+            setStreak(saved);
+        }
+    }, [currentGithubUser]);
 
     const fetchGithubData = async (username) => {
         try {
@@ -47,24 +54,25 @@ export const AppProvider = ({ children }) => {
             const repoData = await repos.json();
 
             const last7days = Array(7).fill(0);
-            if (eventsRes.ok && Array.isArray(eventsData)){
-            eventsData.forEach(event => {
-                if (event.type === "PushEvent") {
-                    const eventDate = new Date(event.created_at);
-                    const today = new Date();
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
 
-                    const diffTime = today.getTime() - eventDate.getTime();
+            if (eventsRes.ok && Array.isArray(eventsData)) {
+                eventsData.forEach(event => {
+                    if (event.type === "PushEvent") {
+                        const eventDate = new Date(event.created_at);
+                        eventDate.setHours(0, 0, 0, 0);
 
-                    const diffDays = Math.floor(
-                        diffTime / (1000 * 60 * 60 * 24)
-                    );
+                        const diffDays = Math.round(
+                            (today - eventDate) / (1000 * 60 * 60 * 24)
+                        );
 
-                    if (diffDays >= 0 && diffDays < 7) {
-                        last7days[6 - diffDays] += event.payload.commits?.length || 1;
+                        if (diffDays >= 0 && diffDays < 7) {
+                            last7days[6 - diffDays] += event.payload.commits?.length || 1;
+                        }
                     }
-                }
-            });
-        }
+                });
+            }
 
             if (!res.ok || !repos.ok) {
                 setGithubData(null);
@@ -87,8 +95,8 @@ export const AppProvider = ({ children }) => {
                 "TypeScript": "JavaScript",
                 "HTML": "HTML",
                 "CSS": "CSS",
-                "Python": "Python",
-                "Java": "Java"
+                "React": "React",
+                "NodeJs": "NodeJs"
             };
 
             const newRatings = {};
@@ -141,7 +149,7 @@ export const AppProvider = ({ children }) => {
                     JSON.stringify(newRatings)
                 );
             }
-            updateStreak();
+            updateStreak(username);
 
         } catch (error) {
             console.log(`Error: ${error}`);
@@ -180,33 +188,32 @@ export const AppProvider = ({ children }) => {
         localStorage.setItem('roadmap', JSON.stringify(generated));
     };
 
-    const updateStreak = () => {
-        const today = new Date().toDateString();
+    const updateStreak = (username) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-        const lastDate = localStorage.getItem("lastActiveDate");
+        const todayStr = today.toLocaleDateString("en-CA");
 
-        if (!lastDate) {
-            setStreak(1);
-            localStorage.setItem("lastActiveDate", today);
-            return;
-        }
+        const lastDateStr = localStorage.getItem(`lastActiveDate_${username}`);
+        let currentStreak = parseInt(localStorage.getItem(`streak_${username}`)) || 0;
 
-        const prev = new Date(lastDate);
-        const curr = new Date(today);
-
-        const diffDays = Math.floor(
-            (curr - prev) / (1000 * 60 * 60 * 24)
-        );
-
-        if (diffDays === 0) return;
-
-        if (diffDays === 1) {
-            setStreak(prev => prev + 1);
+        if (!lastDateStr) {
+            currentStreak = 1;
         } else {
-            setStreak(1);
+            const prev = new Date(lastDateStr);
+            prev.setHours(0, 0, 0, 0);
+
+            const diffDays = Math.round(
+                (today - prev) / (1000 * 60 * 60 * 24)
+            );
+
+            if (diffDays === 1) currentStreak += 1;
+            else if (diffDays > 1) currentStreak = 1;
         }
 
-        localStorage.setItem("lastActiveDate", today);
+        setStreak(currentStreak);
+        localStorage.setItem(`streak_${username}`, currentStreak);
+        localStorage.setItem(`lastActiveDate_${username}`, todayStr);
     };
 
     useEffect(() => {
@@ -225,7 +232,7 @@ export const AppProvider = ({ children }) => {
     useEffect(() => {
         generateRoadmap();
         localStorage.setItem("selectedCareer", selectedCareer);
-    }, [selectedCareer]);
+    }, [selectedCareer, skillRatings]);
 
     useEffect(() => {
         if (currentGithubUser) {
@@ -240,20 +247,14 @@ export const AppProvider = ({ children }) => {
 
     useEffect(() => {
         if (currentGithubUser) {
-            localStorage.setItem(
-                `skillRatings_${currentGithubUser}`,
-                JSON.stringify(skillRatings)
-            );
+            localStorage.setItem(`skillRatings_${currentGithubUser}`, JSON.stringify(skillRatings));
         }
     }, [skillRatings, currentGithubUser]);
 
     useEffect(() => {
-        localStorage.setItem("roadmap", JSON.stringify(roadmap));
-    }, [roadmap]);
-
-    useEffect(() => {
-        localStorage.setItem("streak", streak);
-    }, [streak]);
+        if (currentGithubUser)
+            localStorage.setItem(`streak_${currentGithubUser}`, streak);
+    }, [currentGithubUser, streak]);
 
     useEffect(() => {
         localStorage.setItem("weeklyProgress", JSON.stringify(weeklyProgress));
