@@ -5,7 +5,6 @@ const Progress = () => {
   const { roadmap, progress, streak, githubData, skillRatings, weeklyProgress } = useContext(AppContext);
 
   const weeklyData = useMemo(() => {
-    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const today = new Date();
 
     return weeklyProgress.map((count,index) => {
@@ -59,13 +58,15 @@ const Progress = () => {
           <div className='h-40 flex items-end gap-4 p-2'>
             {
               weeklyData.map((data, index) => {
-                const heightPercentage = (data.count / maxCompletions) * 100;
+                const heightPercentage = (data.count / maxCompletions) * 140;
                 return (
                   <div key={index} className='flex-1 flex flex-col items-center gap-2'>
                     <span className='text-xs font-bold text-indigo-400'>{data.count}</span>
                     <div
                       className='bg-indigo-500 rounded-t-md w-full max-w-[40px] transition-all duration-700 ease-out'
-                      style={{ height: `${Math.max(heightPercentage, 5)}%` }}
+                      style={{
+                      height: data.count === 0 ? "4px" : `${heightPercentage}px`
+                      }}
                     ></div>
                     <span className='text-xs font-semibold text-gray-500 mt-2'>{data.dayName}</span>
                   </div>
@@ -73,7 +74,7 @@ const Progress = () => {
               })
             }
           </div>
-          <p className='text-sm text-gray-800 mt-3'>Daily public GitHub commits in last 7 days</p>
+          <p className='text-sm text-gray-800 mt-3'>Daily GitHub contributions in last 7 days</p>
         </div>
 
         <div className='bg-white p-6 rounded-xl shadow'>

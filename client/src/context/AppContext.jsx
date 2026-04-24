@@ -3,121 +3,204 @@ import { createContext, useEffect, useState } from "react";
 export const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
-
     const [currentGithubUser, setCurrentGithubUser] = useState(
         localStorage.getItem("currentGithubUser") || null
     );
 
-    const [roadmap, setRoadmap] = useState(
-        JSON.parse(localStorage.getItem('roadmap')) || []
+    const [selectedCareer, setSelectedCareer] = useState(
+        localStorage.getItem("selectedCareer") || ""
     );
 
-    const [selectedCareer, setSelectedCareer] = useState(
-        localStorage.getItem('selectedCareer') || ""
+    const [roadmap, setRoadmap] = useState(
+        JSON.parse(localStorage.getItem("roadmap")) || []
     );
 
     const [skillRatings, setSkillRatings] = useState(() => {
-        const storedUser = localStorage.getItem("currentGithubUser");
-        if (!storedUser) return {};
-        return JSON.parse(localStorage.getItem(`skillRatings_${storedUser}`)) || {};
+        const user = localStorage.getItem("currentGithubUser");
+        if (!user) return {};
+        return JSON.parse(localStorage.getItem(`skillRatings_${user}`)) || {};
     });
 
-    const [progress, setProgress] = useState(0);
-
     const [githubData, setGithubData] = useState(
-        JSON.parse(localStorage.getItem('githubData')) || null
+        JSON.parse(localStorage.getItem("githubData")) || null
     );
 
     const [weeklyProgress, setWeeklyProgress] = useState(
-        JSON.parse(localStorage.getItem('weeklyProgress')) || []
+        JSON.parse(localStorage.getItem("weeklyProgress")) || Array(7).fill(0)
     );
 
-    const [streak, setStreak] = useState(0);
+    const [streak, setStreak] = useState(
+        parseInt(localStorage.getItem("streak")) || 0
+    );
 
-    useEffect(() => {
-        if (currentGithubUser) {
-            const saved =
-                parseInt(localStorage.getItem(`streak_${currentGithubUser}`)) || 0;
+    const [progress, setProgress] = useState(0);
 
-            setStreak(saved);
+    const fetchContributionCalendar = async (username) => {
+        const query = {
+            query: `
+            query($login:String!) {
+              user(login:$login) {
+                contributionsCollection {
+                  contributionCalendar {
+                    totalContributions
+                    weeks {
+                      contributionDays {
+                        date
+                        contributionCount
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            `,
+            variables: { login: username }
+        };
+
+        const res = await fetch("https://api.github.com/graphql", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${import.meta.env.VITE_GITHUB_TOKEN}`
+            },
+            body: JSON.stringify(query)
+        });
+
+        const data = await res.json();
+
+        return data?.data?.user?.contributionsCollection?.contributionCalendar;
+    };
+
+    const calculateStreak = (calendar) => {
+        const days = calendar.weeks
+            .flatMap((week) => week.contributionDays)
+            .reverse();
+
+        let count = 0;
+
+        for (let day of days) {
+            if (day.contributionCount > 0) count++;
+            else break;
         }
-    }, [currentGithubUser]);
+
+        return count;
+    };
+
+    const generateRoadmap = (ratings = skillRatings) => {
+        if (!selectedCareer) return;
+
+        const careerSkills = {
+            frontend: ["HTML", "CSS", "JavaScript", "React", "Redux"],
+            backend: ["NodeJs", "Express", "MongoDb", "SQL", "API_Design"],
+            fullstack: ["HTML","CSS","JavaScript","React","NodeJs","MongoDb"]
+        };
+
+        const skills = careerSkills[selectedCareer] || [];
+
+        const generated = skills.map((skill) => {
+            const rating = ratings[skill] || 0;
+
+            return {
+                name: skill,
+                difficulty:
+                    rating <= 2
+                        ? "Beginner"
+                        : rating === 3
+                        ? "Intermediate"
+                        : "Advanced",
+                priority:
+                    rating <= 2
+                        ? "High"
+                        : rating === 3
+                        ? "Medium"
+                        : "Low"
+            };
+        });
+
+        setRoadmap(generated);
+        localStorage.setItem("roadmap", JSON.stringify(generated));
+    };
 
     const fetchGithubData = async (username) => {
         try {
-            const res = await fetch(`https://api.github.com/users/${username}`);
-            const repos = await fetch(`https://api.github.com/users/${username}/repos`);
-            const eventsRes = await fetch(`https://api.github.com/users/${username}/events/public`);
+            const [userRes, repoRes, calendar] = await Promise.all([
+                fetch(`https://api.github.com/users/${username}`),
+                fetch(`https://api.github.com/users/${username}/repos`),
+                fetchContributionCalendar(username)
+            ]);
 
-            const eventsData = await eventsRes.json();
-            const userData = await res.json();
-            const repoData = await repos.json();
+            const userData = await userRes.json();
+            const repoData = await repoRes.json();
 
-            const last7days = Array(7).fill(0);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            if (eventsRes.ok && Array.isArray(eventsData)) {
-                eventsData.forEach(event => {
-                    if (event.type === "PushEvent") {
-                        const eventDate = new Date(event.created_at);
-                        eventDate.setHours(0, 0, 0, 0);
-
-                        const diffDays = Math.round(
-                            (today - eventDate) / (1000 * 60 * 60 * 24)
-                        );
-
-                        if (diffDays >= 0 && diffDays < 7) {
-                            last7days[6 - diffDays] += event.payload.commits?.length || 1;
-                        }
-                    }
-                });
+            if (!userRes.ok || !repoRes.ok) {
+                throw new Error("GitHub User Not Found");
             }
 
-            if (!res.ok || !repos.ok) {
-                setGithubData(null);
-                localStorage.removeItem('githubData');
-                throw new Error('User Not Found');
-            }
+            const languageCounts = {};
 
-            const score = (userData.public_repos * 2) + (userData.followers * 5);
-
-            const language_counts = {};
-            repoData.forEach(repo => {
+            repoData.forEach((repo) => {
                 if (repo.language) {
-                    language_counts[repo.language] =
-                        (language_counts[repo.language] || 0) + 1;
+                    languageCounts[repo.language] =
+                        (languageCounts[repo.language] || 0) + 1;
                 }
             });
 
             const syncMap = {
-                "JavaScript": "JavaScript",
-                "TypeScript": "JavaScript",
-                "HTML": "HTML",
-                "CSS": "CSS",
-                "React": "React",
-                "NodeJs": "NodeJs"
+                JavaScript: "JavaScript",
+                TypeScript: "JavaScript",
+                HTML: "HTML",
+                CSS: "CSS",
+                React: "React",
+                NodeJs: "NodeJs"
             };
 
-            const newRatings = {};
+            const autoRatings = {};
 
-            Object.keys(language_counts).forEach(lang => {
-                const skillname = syncMap[lang];
-                if (skillname) {
-                    const repoCount = language_counts[lang];
+            Object.keys(languageCounts).forEach((lang) => {
+                const skill = syncMap[lang];
 
-                    let autoRating = 1;
-                    if (repoCount > 5) autoRating = 5;
-                    else if (repoCount >= 3) autoRating = 4;
-                    else if (repoCount === 2) autoRating = 3;
-                    else if (repoCount === 1) autoRating = 2;
+                if (skill) {
+                    const count = languageCounts[lang];
 
-                    if (!newRatings[skillname] || autoRating > newRatings[skillname]) {
-                        newRatings[skillname] = autoRating;
-                    }
+                    let rating = 1;
+
+                    if (count > 5) rating = 5;
+                    else if (count >= 3) rating = 4;
+                    else if (count === 2) rating = 3;
+                    else if (count === 1) rating = 2;
+
+                    autoRatings[skill] = Math.max(
+                        autoRatings[skill] || 0,
+                        rating
+                    );
                 }
             });
 
+            const savedRatings =
+                JSON.parse(
+                    localStorage.getItem(`skillRatings_${username}`)
+                ) || autoRatings;
+
+            setSkillRatings(savedRatings);
+            localStorage.setItem(
+                `skillRatings_${username}`,
+                JSON.stringify(savedRatings)
+            );
+
+            const allDays = calendar.weeks.flatMap(
+                (week) => week.contributionDays
+            );
+
+            const last7 = allDays
+                .slice(-7)
+                .map((day) => day.contributionCount);
+
+            const userStreak = calculateStreak(calendar);
+
+            const score =
+                userData.public_repos * 2 +
+                userData.followers * 5 +
+                userStreak * 3;
 
             const summary = {
                 name: userData.name,
@@ -127,107 +210,28 @@ export const AppProvider = ({ children }) => {
                 score: Math.min(score, 100),
                 profile_url: userData.html_url,
                 location: userData.location,
-                languages: language_counts
+                languages: languageCounts,
+                totalContributions: calendar.totalContributions
             };
 
-            setWeeklyProgress(last7days);
             setGithubData(summary);
-            localStorage.setItem("githubData", JSON.stringify(summary));
+            setWeeklyProgress(last7);
+            setStreak(userStreak);
             setCurrentGithubUser(username);
+
+            localStorage.setItem("githubData", JSON.stringify(summary));
+            localStorage.setItem(
+                "weeklyProgress",
+                JSON.stringify(last7)
+            );
+            localStorage.setItem("streak", userStreak);
             localStorage.setItem("currentGithubUser", username);
 
-            const existingRatings = JSON.parse(
-                localStorage.getItem(`skillRatings_${username}`)
-            );
-
-            if (existingRatings) {
-                setSkillRatings(existingRatings);
-            } else {
-                setSkillRatings(newRatings);
-                localStorage.setItem(
-                    `skillRatings_${username}`,
-                    JSON.stringify(newRatings)
-                );
-            }
-            updateStreak(username);
-
+            generateRoadmap(savedRatings);
         } catch (error) {
-            console.log(`Error: ${error}`);
-            throw error;
+            console.log(error);
         }
     };
-
-
-    const generateRoadmap = () => {
-        if (!selectedCareer) return;
-
-        const careerSkills = {
-            frontend: ["HTML", "CSS", "JavaScript", "React", "Redux"],
-            backend: ["NodeJs", "Express", "MongoDb", "SQL", "API_Design"],
-            fullstack: ["HTML", "CSS", "JavaScript", "React", "NodeJs", "MongoDb"]
-        };
-
-        const skills = careerSkills[selectedCareer] || [];
-
-        const generated = skills.map(skill => {
-            const rating = skillRatings[skill] || 0;
-
-            let priority = "Low";
-            if (rating <= 2) priority = "High";
-            else if (rating === 3) priority = "Medium";
-
-            return {
-                name: skill,
-                difficulty: rating <= 2 ? "Beginner" :
-                    rating === 3 ? "Intermediate" : "Advanced",
-                priority
-            };
-        });
-
-        setRoadmap(generated);
-        localStorage.setItem('roadmap', JSON.stringify(generated));
-    };
-
-    const updateStreak = (username) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const todayStr = today.toLocaleDateString("en-CA");
-
-        const lastDateStr = localStorage.getItem(`lastActiveDate_${username}`);
-        let currentStreak = parseInt(localStorage.getItem(`streak_${username}`)) || 0;
-
-        if (!lastDateStr) {
-            currentStreak = 1;
-        } else {
-            const prev = new Date(lastDateStr);
-            prev.setHours(0, 0, 0, 0);
-
-            const diffDays = Math.round(
-                (today - prev) / (1000 * 60 * 60 * 24)
-            );
-
-            if (diffDays === 1) currentStreak += 1;
-            else if (diffDays > 1) currentStreak = 1;
-        }
-
-        setStreak(currentStreak);
-        localStorage.setItem(`streak_${username}`, currentStreak);
-        localStorage.setItem(`lastActiveDate_${username}`, todayStr);
-    };
-
-    useEffect(() => {
-        if (roadmap.length > 0) {
-            const completedCount = roadmap.filter(
-                skill => skillRatings[skill.name] === 5
-            ).length;
-
-            const calculatedProgress = (completedCount / roadmap.length) * 100;
-            setProgress(Math.round(calculatedProgress));
-        } else {
-            setProgress(0);
-        }
-    }, [roadmap, skillRatings]);
 
     useEffect(() => {
         generateRoadmap();
@@ -235,30 +239,27 @@ export const AppProvider = ({ children }) => {
     }, [selectedCareer, skillRatings]);
 
     useEffect(() => {
-        if (currentGithubUser) {
-            const stored = JSON.parse(
-                localStorage.getItem(`skillRatings_${currentGithubUser}`)
+        if (roadmap.length > 0) {
+            const completed = roadmap.filter(
+                (item) => skillRatings[item.name] === 5
+            ).length;
+
+            setProgress(
+                Math.round((completed / roadmap.length) * 100)
             );
-            if (stored) {
-                setSkillRatings(stored);
-            }
+        } else {
+            setProgress(0);
         }
-    }, [currentGithubUser]);
+    }, [roadmap, skillRatings]);
 
     useEffect(() => {
         if (currentGithubUser) {
-            localStorage.setItem(`skillRatings_${currentGithubUser}`, JSON.stringify(skillRatings));
+            localStorage.setItem(
+                `skillRatings_${currentGithubUser}`,
+                JSON.stringify(skillRatings)
+            );
         }
     }, [skillRatings, currentGithubUser]);
-
-    useEffect(() => {
-        if (currentGithubUser)
-            localStorage.setItem(`streak_${currentGithubUser}`, streak);
-    }, [currentGithubUser, streak]);
-
-    useEffect(() => {
-        localStorage.setItem("weeklyProgress", JSON.stringify(weeklyProgress));
-    }, [weeklyProgress]);
 
     return (
         <AppContext.Provider value={{
